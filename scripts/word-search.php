@@ -12,8 +12,8 @@ RegexWords::show(
     ],
     'sar',
     'botcewiz',
-    33,
-true);
+    5,
+false);
 
 class RegexWords
 {
@@ -33,7 +33,7 @@ class RegexWords
         $matches = [];
         $regex = RegexWords::build($letterPositions, $includeLetters, $excludeLetters, $letterCount, $anySize);
         preg_match_all($regex, $data, $matches);
-        echo $regex;
+        echo $regex."\n\n";
         return !empty($matches[0]) ? $matches[0] : [];
     }
 
