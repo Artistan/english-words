@@ -2,9 +2,19 @@
 <?php
 
 $letterCount = 5;
-$found = RegexWords::show(
+RegexWords::show(
     [
-/* position => letters, EQUALS  */
+    ],
+    '',
+    'oacb',
+    $letterCount,
+    false);
+
+
+/* comment this line to use this example
+RegexWords::show(
+    [
+    // position => letters, EQUALS
           1 => ['s',    1],
           2 => ['arw',  0],
           3 => ['rae',  0],
@@ -15,13 +25,36 @@ $found = RegexWords::show(
     'botcewiz',
     $letterCount,
 false);
+//*/
 
-$common = RegexWords::mostCommonLetters($found);
-$commonCount = array_slice($common,0, $letterCount);
-var_dump($commonCount);
 
 class RegexWords
 {
+    public static function wordsByCommonLetters(array $words, bool $unique=true): array
+    {
+        $commonLetters = RegexWords::mostCommonLetters($words);
+        return RegexWords::gradeWords($words, $commonLetters, $unique);
+    }
+
+    public static function gradeWords(array $words, array $gradeLetters, bool $unique=true): array
+    {
+        $graded = [];
+        foreach($words as $word) {
+            $graded[$word] = 0;
+            $letters = str_split(strtolower($word));
+            // if unique, we will ignore the words that do not have all unique letters.
+            if($unique && count(array_unique($letters)) < count($letters)) {
+                continue;
+            }
+            foreach($letters as $l) {
+                $graded[$word] += ($gradeLetters[$l] ?? 0) * 1;
+            }
+
+        }
+        arsort($graded);
+        return $graded;
+    }
+
     public static function mostCommonLetters(array $words): array
     {
         $common = [];
@@ -36,14 +69,18 @@ class RegexWords
             }
         }
         arsort($common);
+        var_dump(array_slice($common, 0, 20));
         return $common;
     }
 
     public static function show(array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false)
     {
         $found = RegexWords::find($letterPositions, $includeLetters, $excludeLetters, $letterCount, $anySize);
-        echo implode("\n", $found) . "\n";
-        return $found;
+        $gradedWords = RegexWords::wordsByCommonLetters($found);
+        foreach(array_slice($gradedWords, 0, 20) as $word => $grade) {
+            echo "$word - $grade\n";
+        }
+        return $gradedWords;
     }
 
     public static function find(array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false): array
@@ -55,34 +92,37 @@ class RegexWords
         }
         $matches = [];
         $regex = RegexWords::build($letterPositions, $includeLetters, $excludeLetters, $letterCount, $anySize);
-        preg_match_all($regex, $data, $matches);
         echo $regex."\n\n";
+        preg_match_all($regex, $data, $matches);
         return !empty($matches[0]) ? $matches[0] : [];
     }
 
     public static function build(array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false): string
     {
-        $regex = RegexWords::includeLettersAhead($includeLetters);
-        $regex .= RegexWords::excludeLettersAhead($excludeLetters);
-        $maxKey = max(...array_keys($letterPositions));
-        if (!empty($letterPositions)) {
-            for ($l = 1; $l <= $letterCount; $l++) {
-                // =====  EACH LETTER OPTIONS
-                if(!empty($letterPositions[$l][0])) {
-                    $regex .= RegexWords::positionLetter($letterPositions[$l][0], !!($letterPositions[$l][1] ?? 0) );
-                } else {
-                    $regex .= '.';
-                }
-                // make anything after the last $letterPositions optional
-                if($anySize) {
-                    // limit the requirement of extra letters
-                    if($l > $maxKey){
-                        $regex .= '?';
+        if($letterPositions) {
+            $maxKey = max(...array_keys($letterPositions));
+            if (!empty($letterPositions)) {
+                for ($l = 1; $l <= $letterCount; $l++) {
+                    // =====  EACH LETTER OPTIONS
+                    if(!empty($letterPositions[$l][0])) {
+                        $regex .= RegexWords::positionLetter($letterPositions[$l][0], !!($letterPositions[$l][1] ?? 0) );
+                    } else {
+                        $regex .= '.';
+                    }
+                    // make anything after the last $letterPositions optional
+                    if($anySize) {
+                        // limit the requirement of extra letters
+                        if($l > $maxKey){
+                            $regex .= '?';
+                        }
                     }
                 }
             }
         }
-        $regex .= '';
+        if(empty($regex)) {
+            $regex = '.*';
+        }
+        $regex = RegexWords::includeLettersAhead($includeLetters) . RegexWords::excludeLettersAhead($excludeLetters) . $regex;
         // =====  BUILD REGEX
         return "/^{$regex}$/im";
     }
@@ -92,7 +132,9 @@ class RegexWords
         $letters = str_split($letters);
         $ret = '';
         foreach ($letters as $l) {
-            $ret .= self::includeLetterAhead($l);
+            if($l) {
+                $ret .= self::includeLetterAhead($l);
+            }
         }
         return $ret;
     }
@@ -107,7 +149,9 @@ class RegexWords
         $letters = str_split($letters);
         $ret = '';
         foreach ($letters as $l) {
-            $ret .= self::excludeLetterAhead($l);
+            if($l) {
+                $ret .= self::excludeLetterAhead($l);
+            }
         }
         return $ret;
     }
