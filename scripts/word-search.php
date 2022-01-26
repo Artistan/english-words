@@ -6,7 +6,7 @@ RegexWords::show(
     [
     ],
     '',
-    'oacb',
+    '',
     $letterCount,
     false);
 
