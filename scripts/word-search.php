@@ -1,12 +1,9 @@
 #!/usr/local/bin/php
 <?php
 
-define('GRADE_UNIQUE_LETTERS_ONCE', 1);
-define('SHOW_ONLY_UNIQUE_WORDS', 2);
-define('COUNT_ONLY_UNIQUE_LETTERS', 4);
 
 $letterCount = 5;
-$unique = GRADE_UNIQUE_LETTERS_ONCE + SHOW_ONLY_UNIQUE_WORDS + COUNT_ONLY_UNIQUE_LETTERS;
+$unique = RegexWords::GRADE_UNIQUE_LETTERS_ONCE + RegexWords::SHOW_ONLY_UNIQUE_WORDS + RegexWords::COUNT_ONLY_UNIQUE_LETTERS;
 
 RegexWords::show(
     $unique,
@@ -42,11 +39,15 @@ false);
 
 class RegexWords
 {
+    const GRADE_UNIQUE_LETTERS_ONCE = 1;
+    const SHOW_ONLY_UNIQUE_WORDS = 2;
+    const COUNT_ONLY_UNIQUE_LETTERS = 4;
+
     // if unique, then return only words with all unique letters
     public static function wordsByCommonLetters(array $words, int $unique = 0): array
     {
-        $commonLetters = RegexWords::mostCommonLetters($words, $unique);
-        return RegexWords::gradeWords($words, $commonLetters, $unique);
+        $commonLetters = self::mostCommonLetters($words, $unique);
+        return self::gradeWords($words, $commonLetters, $unique);
     }
 
     public static function gradeWords(array $words, array $gradeLetters, int $unique = 0): array
@@ -54,13 +55,13 @@ class RegexWords
         $graded = [];
         foreach($words as $word) {
             $letters = str_split(strtolower($word));
-            // if unique, we will exclude this word fromt he list
-            if($unique & SHOW_ONLY_UNIQUE_WORDS && count(array_unique($letters)) < count($letters)) {
+            // if unique, we will exclude this word from the list
+            if($unique & self::SHOW_ONLY_UNIQUE_WORDS && count(array_unique($letters)) < count($letters)) {
                 continue;
             }
             $graded[$word] = 0;
             // if unique, we will ignore the words that do not have all unique letters.
-            if($unique & GRADE_UNIQUE_LETTERS_ONCE && count(array_unique($letters)) < count($letters)) {
+            if($unique & self::GRADE_UNIQUE_LETTERS_ONCE && count(array_unique($letters)) < count($letters)) {
                 $letters = array_unique($letters);
             }
             foreach($letters as $l) {
@@ -79,7 +80,7 @@ class RegexWords
         foreach($words as $word) {
             $letters = str_split(strtolower($word));
             // if unique, we will ignore the words that do not have all unique letters.
-            if($unique & COUNT_ONLY_UNIQUE_LETTERS) {
+            if($unique & self::COUNT_ONLY_UNIQUE_LETTERS) {
                 $letters = array_unique($letters);
             }
             foreach($letters as $l) {
@@ -94,10 +95,10 @@ class RegexWords
         return $common;
     }
 
-    public static function show(int $unique, array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false)
+    public static function show(int $unique, array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false): array
     {
-        $found = RegexWords::find($letterPositions, $includeLetters, $excludeLetters, $letterCount, $anySize);
-        $gradedWords = RegexWords::wordsByCommonLetters($found, $unique);
+        $found = self::find($letterPositions, $includeLetters, $excludeLetters, $letterCount, $anySize);
+        $gradedWords = self::wordsByCommonLetters($found, $unique);
         foreach(array_slice($gradedWords, 0, 20) as $word => $grade) {
             echo "$word - $grade\n";
         }
@@ -112,7 +113,7 @@ class RegexWords
             $data = file_get_contents(__DIR__ . '/words-' . $letterCount . '.txt');
         }
         $matches = [];
-        $regex = RegexWords::build($letterPositions, $includeLetters, $excludeLetters, $letterCount, $anySize);
+        $regex = self::build($letterPositions, $includeLetters, $excludeLetters, $letterCount, $anySize);
         echo $regex."\n\n";
         preg_match_all($regex, $data, $matches);
         return !empty($matches[0]) ? $matches[0] : [];
@@ -127,7 +128,7 @@ class RegexWords
                 for ($l = 1; $l <= $letterCount; $l++) {
                     // =====  EACH LETTER OPTIONS
                     if(!empty($letterPositions[$l][0])) {
-                        $regex .= RegexWords::positionLetter($letterPositions[$l][0], !!($letterPositions[$l][1] ?? 0) );
+                        $regex .= self::positionLetter($letterPositions[$l][0], !!($letterPositions[$l][1] ?? 0) );
                     } else {
                         $regex .= '.';
                     }
@@ -144,7 +145,7 @@ class RegexWords
         if(empty($regex)) {
             $regex = '.*';
         }
-        $regex = RegexWords::includeLettersAhead($includeLetters) . RegexWords::excludeLettersAhead($excludeLetters) . $regex;
+        $regex = self::includeLettersAhead($includeLetters) . self::excludeLettersAhead($excludeLetters) . $regex;
         // =====  BUILD REGEX
         return "/^{$regex}$/im";
     }
