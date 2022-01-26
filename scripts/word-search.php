@@ -1,12 +1,24 @@
 #!/usr/local/bin/php
 <?php
 
+define('GRADE_UNIQUE_LETTERS_ONCE', 1);
+define('SHOW_ONLY_UNIQUE_WORDS', 2);
+define('COUNT_ONLY_UNIQUE_LETTERS', 4);
+
 $letterCount = 5;
+$unique = GRADE_UNIQUE_LETTERS_ONCE + SHOW_ONLY_UNIQUE_WORDS + COUNT_ONLY_UNIQUE_LETTERS;
+
 RegexWords::show(
+    $unique,
     [
+        1 => ['',  0],
+        2 => ['',  0],
+        3 => ['',  0],
+        4 => ['',  1],
+        5 => ['',  0]
     ],
     '',
-    '',
+    'raise',
     $letterCount,
     false);
 
@@ -30,21 +42,26 @@ false);
 
 class RegexWords
 {
-    public static function wordsByCommonLetters(array $words, bool $unique=true): array
+    // if unique, then return only words with all unique letters
+    public static function wordsByCommonLetters(array $words, int $unique = 0): array
     {
-        $commonLetters = RegexWords::mostCommonLetters($words);
+        $commonLetters = RegexWords::mostCommonLetters($words, $unique);
         return RegexWords::gradeWords($words, $commonLetters, $unique);
     }
 
-    public static function gradeWords(array $words, array $gradeLetters, bool $unique=true): array
+    public static function gradeWords(array $words, array $gradeLetters, int $unique = 0): array
     {
         $graded = [];
         foreach($words as $word) {
-            $graded[$word] = 0;
             $letters = str_split(strtolower($word));
-            // if unique, we will ignore the words that do not have all unique letters.
-            if($unique && count(array_unique($letters)) < count($letters)) {
+            // if unique, we will exclude this word fromt he list
+            if($unique & SHOW_ONLY_UNIQUE_WORDS && count(array_unique($letters)) < count($letters)) {
                 continue;
+            }
+            $graded[$word] = 0;
+            // if unique, we will ignore the words that do not have all unique letters.
+            if($unique & GRADE_UNIQUE_LETTERS_ONCE && count(array_unique($letters)) < count($letters)) {
+                $letters = array_unique($letters);
             }
             foreach($letters as $l) {
                 $graded[$word] += ($gradeLetters[$l] ?? 0) * 1;
@@ -55,11 +72,16 @@ class RegexWords
         return $graded;
     }
 
-    public static function mostCommonLetters(array $words): array
+    // get count of how many words a letter belongs to
+    public static function mostCommonLetters(array $words, int $unique=0): array
     {
         $common = [];
         foreach($words as $word) {
             $letters = str_split(strtolower($word));
+            // if unique, we will ignore the words that do not have all unique letters.
+            if($unique & COUNT_ONLY_UNIQUE_LETTERS) {
+                $letters = array_unique($letters);
+            }
             foreach($letters as $l) {
                 if (empty($common[$l])) {
                     $common[$l] = 1;
@@ -69,14 +91,13 @@ class RegexWords
             }
         }
         arsort($common);
-        var_dump(array_slice($common, 0, 20));
         return $common;
     }
 
-    public static function show(array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false)
+    public static function show(int $unique, array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false)
     {
         $found = RegexWords::find($letterPositions, $includeLetters, $excludeLetters, $letterCount, $anySize);
-        $gradedWords = RegexWords::wordsByCommonLetters($found);
+        $gradedWords = RegexWords::wordsByCommonLetters($found, $unique);
         foreach(array_slice($gradedWords, 0, 20) as $word => $grade) {
             echo "$word - $grade\n";
         }
@@ -99,6 +120,7 @@ class RegexWords
 
     public static function build(array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false): string
     {
+        $regex = '';
         if($letterPositions) {
             $maxKey = max(...array_keys($letterPositions));
             if (!empty($letterPositions)) {

@@ -12,7 +12,8 @@ $fpw = fopen(__DIR__ . '/words-' . $numb . '.txt','w');
 
 if ($fp) {
     while (($buffer = fgets($fp, 4096)) !== false) {
-        if(strlen(trim($buffer)) == $numb) {
+        // only keep alpha character words
+        if(strlen(trim($buffer)) == $numb && preg_match('/[a-z]{5}/i', $buffer)) {
             fwrite($fpw,strtolower($buffer));
         }
     }
