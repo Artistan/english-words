@@ -12,7 +12,7 @@ RegexWords::show(
     ],
     'sar',
     'botcewiz',
-    22,
+    33,
 true);
 
 class RegexWords
@@ -39,7 +39,8 @@ class RegexWords
 
     public static function build(array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false): string
     {
-        $regex = '';
+        $regex = RegexWords::includeLettersAhead($includeLetters);
+        $regex .= RegexWords::excludeLettersAhead($excludeLetters);
         $maxKey = max(...array_keys($letterPositions));
         if (!empty($letterPositions)) {
             for ($l = 1; $l <= $letterCount; $l++) {
@@ -50,48 +51,79 @@ class RegexWords
                     $regex .= '.';
                 }
                 // make anything after the last $letterPositions optional
-                if($anySize && $l > $maxKey) {
-                    $regex .= '?';
+                if($anySize) {
+                    // limit the requirement of extra letters
+                    if($l > $maxKey){
+                        $regex .= '?';
+                    }
                 }
             }
         }
         $regex .= '';
-        // =====  INCLUDES LETTERS
-        $regex .= RegexWords::includeLetters($includeLetters, $letterCount);
-        // =====  EXCLUDE LETTERS
-        $regex .= RegexWords::excludeLetters($excludeLetters, $letterCount);
         // =====  BUILD REGEX
         return "/^{$regex}$/im";
     }
 
-    public static function includeLetters(string $letters, int $letterCount): string
+    public static function includeLettersAhead(string $letters): string
     {
         $letters = str_split($letters);
         $ret = '';
         foreach ($letters as $l) {
-            $ret .= self::includeLetter($l, $letterCount);
+            $ret .= self::includeLetterAhead($l);
         }
         return $ret;
     }
 
-    public static function includeLetter(string $letter, int $letterCount): string
+    public static function includeLetterAhead(string $letter): string
     {
-        return '(?<![^' . $letter . ']{' . $letterCount . '})';
+        return '(?=.*[' . $letter . ']+.*)';
     }
 
-    public static function excludeLetters(string $letters, int $letterCount): string
+    public static function excludeLettersAhead(string $letters): string
     {
         $letters = str_split($letters);
         $ret = '';
         foreach ($letters as $l) {
-            $ret .= self::excludeLetter($l, $letterCount);
+            $ret .= self::excludeLetterAhead($l);
         }
         return $ret;
     }
 
-    public static function excludeLetter(string $letter, int $letterCount): string
+    public static function excludeLetterAhead(string $letter): string
     {
-        return '(?<=[^' . $letter . ']{' . $letterCount . '})';
+        return '(?!.*[' . $letter . ']+.*)';
+    }
+
+    public static function includeLettersBehind(string $letters, ?int $letterCount = null): string
+    {
+        $letters = str_split($letters);
+        $ret = '';
+        foreach ($letters as $l) {
+            $ret .= self::includeLetterBehind($l, $letterCount);
+        }
+        return $ret;
+    }
+
+    public static function includeLetterBehind(string $letter, ?int $letterCount = null): string
+    {
+        $cnt = $letterCount ? '{' . $letterCount . '}' : '';
+        return '(?<![^' . $letter . ']' . $cnt . ')';
+    }
+
+    public static function excludeLettersBehind(string $letters, ?int $letterCount = null): string
+    {
+        $letters = str_split($letters);
+        $ret = '';
+        foreach ($letters as $l) {
+            $ret .= self::excludeLetterBehind($l, $letterCount);
+        }
+        return $ret;
+    }
+
+    public static function excludeLetterBehind(string $letter, ?int $letterCount = null): string
+    {
+        $cnt = $letterCount ? '{' . $letterCount . '}' : '';
+        return '(?<=[^' . $letter . ']' . $cnt . ')';
     }
 
     public static function positionLetter(string $string, bool $equals = false): string
