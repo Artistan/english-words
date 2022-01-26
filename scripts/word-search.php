@@ -1,7 +1,8 @@
 #!/usr/local/bin/php
 <?php
 
-RegexWords::show(
+$letterCount = 5;
+$found = RegexWords::show(
     [
 /* position => letters, EQUALS  */
           1 => ['s',    1],
@@ -12,15 +13,37 @@ RegexWords::show(
     ],
     'sar',
     'botcewiz',
-    5,
+    $letterCount,
 false);
+
+$common = RegexWords::mostCommonLetters($found);
+$commonCount = array_slice($common,0, $letterCount);
+var_dump($commonCount);
 
 class RegexWords
 {
+    public static function mostCommonLetters(array $words): array
+    {
+        $common = [];
+        foreach($words as $word) {
+            $letters = str_split(strtolower($word));
+            foreach($letters as $l) {
+                if (empty($common[$l])) {
+                    $common[$l] = 1;
+                } else {
+                    $common[$l]++;
+                }
+            }
+        }
+        arsort($common);
+        return $common;
+    }
+
     public static function show(array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false)
     {
         $found = RegexWords::find($letterPositions, $includeLetters, $excludeLetters, $letterCount, $anySize);
         echo implode("\n", $found) . "\n";
+        return $found;
     }
 
     public static function find(array $letterPositions, string $includeLetters, string $excludeLetters, int $letterCount, bool $anySize = false): array
