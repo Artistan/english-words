@@ -3,19 +3,19 @@
 
 
 $letterCount = 5;
-$unique = RegexWords::GRADE_UNIQUE_LETTERS_ONCE + RegexWords::SHOW_ONLY_UNIQUE_WORDS + RegexWords::COUNT_ONLY_UNIQUE_LETTERS;
+$unique = RegexWords::GRADE_UNIQUE_LETTERS_ONCE + /*RegexWords::SHOW_ONLY_UNIQUE_WORDS*/ + RegexWords::COUNT_ONLY_UNIQUE_LETTERS;
 
 RegexWords::show(
     $unique,
     [
-        1 => ['',  0],
-        2 => ['',  0],
-        3 => ['',  0],
-        4 => ['',  1],
-        5 => ['',  0]
+        1 => ['d',  0],
+        2 => ['e',  0],
+        3 => ['l',  0],
+        4 => ['r',  0],
+        5 => ['e',  0]
     ],
-    '',
-    'raise',
+    'delr',
+    'soaunityph',
     $letterCount,
     false);
 
@@ -47,6 +47,7 @@ class RegexWords
     public static function wordsByCommonLetters(array $words, int $unique = 0): array
     {
         $commonLetters = self::mostCommonLetters($words, $unique);
+        var_dump($commonLetters);
         return self::gradeWords($words, $commonLetters, $unique);
     }
 
